@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+
+# Import the Halite SDK, which will let you interact with the game.
+import hlt
+from hlt import constants
+
+import random
+import logging
+
+
+# This game object contains the initial game state.
+game = hlt.Game()
+
+#PR- as you improve your bot, compute things before giving the thumbs up(30seconds before forfeit)
+#PRi- for example, find out the location of the shipyard so that when a ship is full, it has somewhere to go back to.
+#PRii - find out which quadrant shipyard is in, and bias ship movement into centre or at least not into corner. 
+    #PRii - this is not a good strat since edges wrap.
+#PR- command immediately below gives the game engine the thumbs up
+game.ready("PaulBot0001")
+
+while True:
+    #PR- command below updates the game state
+    game.update_frame()
+    # You extract player metadata and the updated map metadata here for convenience.#PR-key info is stored in 'me' and 'game_map'
+    me = game.me
+    game_map = game.game_map
+
+    #PR-info now available:magnitude & loc of H in each coord, coord and mag-of-H of each ship, mag of stored H for each player
+    # A command queue holds all the commands you will run this turn.
+    command_queue = []
+
+    for ship in me.get_ships():
+        # For each of your ships, move randomly if the ship is on a low halite location or the ship is full.
+        #   Else, collect halite. #PR-just by staying still halite is collected.
+        #PR-idea: if last ship moved N, move S, in order to avoid collisions(assuming the nearby ships are the ones that\
+            #PR2 this is only sort of a good idea, no better than random (if #1is west,moves east, and #2 is east, told to move west.
+            #PR3-this gives them a chance of collision
+        #debug PR logging.info("Ship {} has {} halite.".format(ship.id, ship.halite_amount))
+        
+        if game_map[ship.position].halite_amount < constants.MAX_HALITE / 10 or ship.is_full:
+            command_queue.append(
+                ship.move(random.choice(["n", "s", "e", "w"])))
+        else:
+            command_queue.append(ship.stay_still())
+
+    # If you're on the first turn and have enough halite, spawn a ship.
+    # Don't spawn a ship if you currently have a ship at port, though. #PR - S can collide at P
+    if game.turn_number <= 1 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+        command_queue.append(game.me.shipyard.spawn())
+    #debug PR if me.halite_amount >= constant.SHIP_COST and not game_map[me.shipyard].is_occupied and not me.halite_amount <= 2000 :
+        command_queue.append(game.me.shipyard.spawn())
+    #PR if # ships is >8, stop building
+
+    # Send your moves back to the game environment, ending this turn.
+    game.end_turn(command_queue)
+
+#When your ship collects halite on its turn, it will collect 25% of halite available in its location, rounded up
+#e now that your ships are filling up with halite. You won't receive credit for the halite until it is brought back to port,
