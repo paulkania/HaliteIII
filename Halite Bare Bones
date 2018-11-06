@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+# Import the Halite SDK, which will let you interact with the game.
+import hlt     #NPR
+from hlt import constants   #NPR
+
+import random   #NPR
+import logging  #NPR
+game = hlt.Game() # This game object contains the initial game state
+game.ready("PaulBot0001")   #PR- this command (<<) is us saying we are ready to play. above we can make decisions with given info(#players, etc)
+while True: #while game is on
+    
+    game.update_frame()     #PR- command below updates the game state
+    
+    me = game.me    # Engine extracts player metadata and the updated map metadata here for convenience.
+    game_map = game.game_map
+
+    #PR-info now available:magnitude & loc of H in each coord, coord and mag-of-H of each ship, mag of stored H for each player
+    # A command queue holds all the commands you will run this turn.
+    command_queue = []
+
+    ship_status = {} underneat this
+  
+    for ship in me.get_ships()
+
+    # Send your moves back to the game environment, ending this turn.
+    game.end_turn(command_queue)
