@@ -66,9 +66,7 @@ while True:
             if ship.halite_amount > constants.MAX_HALITE *0.80:
                 ship_states[ship.id] = "depositing"
 
-        if ship.position == me.shipyard.position:
-            ship_states = "collecting"
-
+    
     if game.turn_number % 10 == 0 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
         command_queue.append(me.shipyard.spawn())
     if game.turn_number  == 1 and not game_map[me.shipyard].is_occupied:
