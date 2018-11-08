@@ -4,6 +4,20 @@ from hlt.positionals import Direction
 import random
 import logging
 #0004
+"""
+current bugs -> when ship is travelling and swaying between my bounds of 0.7 max halite, it goes from between depositing and 
+            collecting quickly as it goes from ~0.65<x<0.75.
+            they must not be aware of each other, when switching modes, they are in an 'ether' mode.
+
+
+
+
+
+
+
+
+"""
+
 
 game = hlt.Game()   # At this point "game" variable is populated with initial map data.
 # This is a good place to do computationally expensive start-up pre-processing.
