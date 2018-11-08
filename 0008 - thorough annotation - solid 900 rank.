@@ -1,0 +1,87 @@
+#contains a failed but beign attempt @ fix at the ~.7 collect/deposit bug.
+#
+#
+#
+
+import hlt
+from hlt import constants
+from hlt.positionals import Direction
+import random
+import logging
+#0007
+#see github-readme for inspiration for further ideas.
+
+game = hlt.Game()   # At this point "game" variable is populated with initial map data. This is a good place to do computationally expensive start-up pre-processing.
+# As soon as you call "ready" function below, the 2 second per turn timer will start.
+game.ready("MyPythonBot")
+logging.info("Successfully created bot! My Player ID is {}.".format(game.my_id))
+
+
+
+
+
+#my work starts
+    #legend: locations are described as local (0,1) or reference (19,31)
+
+
+ship_states={}     #empty dictionary, outside of game loop. why! episode#5.
+
+while True:                     #while game is on
+    game.update_frame()         #update frame. frame==turn
+    me = game.me            #gives some game info
+    game_map = game.game_map    #gives map info.
+
+
+
+    command_queue = [] #create empty list that will be later appended to.
+    local_direction_order = [Direction.North,Direction.South,Direction.East,Direction.West,Direction.Still] #gives a local(rather than reference) coordinate, for movement.
+    bumpless_choices = []   #list that will be populated w/ reference locations, made so that two ships do not take the same position choice (and therefore crash).
+
+    for ship in me.get_ships():                 #for everyship (iteration of each ship
+        if ship.id not in ship_states:          #if the ship has yet to be ID'd (so )
+            ship_states[ship.id] = "collecting" #then set this ship to "collecting"
+
+
+        reference_coord_options = ship.position.get_surrounding_cardinals() + [ship.position] #gives reference locations of N,S,E,W,O for this ship
+
+        position_dict = {} #empty dict to be filled with --defined on position_dict[direction] = reference_coord_options[n]. and used in other loops.
+        halite_dict = {}  #empty dict to be filled with --
+
+        for n, direction in enumerate(local_direction_order): #n maps to index, which is created by the enumerate function. direction maps to local_direction_order, which is the local co-ords of NSEW,O.
+            position_dict[direction] = reference_coord_options[n] #here the key of position dict becomes local NSEW,O coords..the Value of position dict becomes reference coordinate options.
+
+        for k_v in position_dict:           #for each k_v in position_dict
+            ref_position = position_dict[k_v]   #RH is defined as the value of the position_dict
+            halite_amount = game_map[ref_position].halite_amount #halite_amount is defined as the amount of halite of the square
+            if ref_position not in bumpless_choices: #if the ref_position is not already in bumpless_choices list
+                if k_v == Direction.Still:      #and the key of position dict is the same as Direction.Still (0,0)
+                    halite_dict[k_v]=halite_amount*2.5 #halite value of value-pair is *2.5. implemented so that if faced with surroundings where H levels are ~equal, it will just mine, instead of hop back and forth.
+                else:                           #if the key if position dict is a movement                       
+                    halite_dict[k_v]=halite_amount  #halite value is *1. this is finishing the accomplishment of preventing ships from 'back-and-forthing'
+           
+
+        if ship_states[ship.id]  == "depositing":  #if ship.id is set to 'depositing' mode
+            move = game_map.naive_navigate(ship, me.shipyard.position) #move is defined as the naive/smart navigation from ship to shipyard.
+            bumpless_choices.append(position_dict[move])            ############LAST MINUTE CHANGE 10PM NOV7, to try to fix collisions.
+            bumpless_choices.append(position_dict[direction_choice])    ####appending to the bumpless_choices list, the value, which is a reference coord, of the move this ship is about to make. bumpless_choice is referenced above so another ship cannot next iteration take this move.
+            command_queue.append(ship.move(move))       #append to command queue the smart-movement to go home.
+            if move == Direction.Still:             #this was a patch to make it so that once finished depositing, the ship would frick off and start collecting again.
+                ship_states[ship.id] = "collecting" #set it to collecting.
+
+
+        elif ship_states[ship.id] == "collecting":  #if ship state is collecting, rather than depositing.
+            direction_choice = max(halite_dict, key=halite_dict.get)  #direction_choice newly defined as the max local coord, chosen by the maxV in the K_V, which is the halite_amount.
+            bumpless_choices.append(position_dict[direction_choice])#append bumplesss_choices with the Vofk_v of positional dict, which is a reference_coord
+            bumpless_choices.append(position_dict[game_map.naive_navigate(ship, me.shipyard.position)])   ############LAST MINUTE CHANGE 10PM NOV7, to try to fix collisions.
+            command_queue.append(ship.move(direction_choice))   #append the command_queue with the direction choice made by max halite (*1,*2.5 is in effect..see those lines in relation with this, it's interesting.)
+            
+            if ship.halite_amount > constants.MAX_HALITE *0.70: #going to bed
+                ship_states[ship.id] = "depositing"
+
+    if game.turn_number % 3 == 0 and game.turn_number <175 and me.halite_amount >= constants.SHIP_COST and not game_map[me.shipyard].is_occupied:
+        command_queue.append(me.shipyard.spawn())
+    if game.turn_number  == 1 and not game_map[me.shipyard].is_occupied:
+       command_queue.append(me.shipyard.spawn())
+
+   
+    game.end_turn(command_queue)
