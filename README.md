@@ -19,3 +19,7 @@ These are my Halite iterations, which start, and hopefully don't finish with Sen
 
 
     N8:1/ if direction_choices halite_amount <5, move randome(north or south).
+    
+    FINISHED:N8:2/   As per this video https://www.youtube.com/watch?v=Cu6iJvctnhs. if someone sends their ship to dock at your         shipyard and stay, I need to be able to identify if the ship is mine or someone elses. 
+        ##edit: tho i dont use the 'mark_unsafe' option as far as i can tell, so my ship would just eat their ship, since its 
+           not aware of other peoples ships.
